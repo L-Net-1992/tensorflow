@@ -23,7 +23,7 @@ include "mlir/IR/OpBase.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/FunctionInterfaces.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
-include "mlir/Dialect/Quant/QuantOpsBase.td"
+include "mlir/Dialect/Quant/IR/QuantBase.td"
 include "mlir/Interfaces/LoopLikeInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "tensorflow/compiler/mlir/lite/ir/tfl_op_interfaces.td"
@@ -1199,6 +1199,8 @@ def TFL_GatherOp : TFL_Op<"gather", [
   let hasOptions = 1;
 
   let hasVerifier = 1;
+
+  let hasFolder = 1;
 
   let extraClassDeclaration = [{
     // DynamicRangeQuantizedOpInterface:
@@ -2421,6 +2423,8 @@ equivalent to setting:
   let hasVerifier = 1;
 
   let hasCanonicalizer = 1;
+
+  let hasFolder = 1;
 }
 
 def TFL_SumOp: TFL_Op<"sum", [
@@ -2447,6 +2451,8 @@ def TFL_SumOp: TFL_Op<"sum", [
 
   let hasOptions = 1;
   let customOption = "ReducerOptions";
+
+  let hasFolder = 1;
 
   // TODO(b/215655380): Re-enable this once there is 16-bit MLIR quantizer.
   //
@@ -2725,6 +2731,8 @@ def TFL_PadOp : TFL_Op<"pad", [
   let hasOptions = 1;
 
   let hasFolder = 1;
+
+  let hasCanonicalizer = 1;
 }
 
 def TFL_PadV2Op : TFL_Op<"padv2", [
@@ -3149,6 +3157,8 @@ def TFL_ReverseV2Op: TFL_Op<"reverse_v2", [
       with only 1 element which is the axis index.
       TODO: Add support for multiple elements.
   }];
+
+  let hasFolder = 1;
 
   let arguments = (
     ins

@@ -101,7 +101,8 @@ bool IsMatrixMultiplication(const HloInstruction& dot) {
 
   PrimitiveType output_primitive_type = dot.shape().element_type();
   bool type_is_allowed =
-      (output_primitive_type == F8E4M3FN || output_primitive_type == F8E5M2 ||
+      (output_primitive_type == F8E3M4 || output_primitive_type == F8E4M3 ||
+       output_primitive_type == F8E4M3FN || output_primitive_type == F8E5M2 ||
        output_primitive_type == F8E4M3FNUZ ||
        output_primitive_type == F8E5M2FNUZ || output_primitive_type == F16 ||
        output_primitive_type == BF16 || output_primitive_type == F32 ||
@@ -557,17 +558,7 @@ std::optional<TransposeDescription> GetDescriptionForTiledTransposeEmitter(
   absl::InlinedVector<int64_t, 3> dimensions(hero.shape().dimensions().begin(),
                                              hero.shape().dimensions().end());
   int64_t operand_most_minor_dim = hero.operand(0)->shape().dimensions().back();
-  if (permutation == absl::InlinedVector<int64_t, 3>{0, 2, 1} ||
-      permutation == absl::InlinedVector<int64_t, 3>{2, 1, 0}) {
-    if ((dimensions.back() >= kMinDimensionToTransposeTiled &&
-         operand_most_minor_dim >= kMinDimensionToTransposeTiled) ||
-        (dimensions.back() >= kMinDimensionToTransposeTiled2 &&
-         operand_most_minor_dim >= kMinDimensionToTransposeTiled2 &&
-         dimensions.back() * operand_most_minor_dim >=
-             kMinTotalDimensionsToTransposeTiled)) {
-      return TransposeDescription{&hero, dimensions, permutation};
-    }
-  } else if (IsMlirTransposeEmitterEnabled(hero)) {
+  if (IsMlirTransposeEmitterEnabled(hero)) {
     if (permutation.back() == dimensions.size() - 1) {
       operand_most_minor_dim =
           hero.operand(0)->shape().dimensions(dimensions.size() - 2);
@@ -585,6 +576,22 @@ std::optional<TransposeDescription> GetDescriptionForTiledTransposeEmitter(
                 dimensions.back() >= kMinDimensionToTransposeTiled2 &&
                 operand_most_minor_dim * dimensions.back() >=
                     kMinTotalDimensionsToTransposeTiled)) {
+      return TransposeDescription{&hero, dimensions, permutation};
+    }
+  } else if (permutation == absl::InlinedVector<int64_t, 3>{1, 0} ||
+             permutation == absl::InlinedVector<int64_t, 3>{0, 2, 1} ||
+             permutation == absl::InlinedVector<int64_t, 3>{2, 1, 0}) {
+    // The old emitter needs a normalization to rank 3.
+    if (permutation.size() == 2) {
+      permutation = {0, 2, 1};
+      dimensions.insert(dimensions.begin(), 1);
+    }
+    if ((dimensions.back() >= kMinDimensionToTransposeTiled &&
+         operand_most_minor_dim >= kMinDimensionToTransposeTiled) ||
+        (dimensions.back() >= kMinDimensionToTransposeTiled2 &&
+         operand_most_minor_dim >= kMinDimensionToTransposeTiled2 &&
+         dimensions.back() * operand_most_minor_dim >=
+             kMinTotalDimensionsToTransposeTiled)) {
       return TransposeDescription{&hero, dimensions, permutation};
     }
   }
